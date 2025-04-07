@@ -152,6 +152,7 @@ const discordClient = new Client({
 
 discordClient.commands = new Collection();
 
+// biome-ignore lint/complexity/noForEach: <explanation>
 slashCommands.forEach((command) => {
   discordClient.commands.set(command.data.name, command);
 });
@@ -171,6 +172,7 @@ await new Promise((resolve) => {
   discordClient.once(Events.ClientReady, async (readyClient) => {
     resolve(readyClient);
   });
+  console.log('process.env.DISCORD_BOT_TOKEN:', process.env.DISCORD_BOT_TOKEN)
   discordClient.login(process.env.DISCORD_BOT_TOKEN);
 });
 

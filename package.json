@@ -15,7 +15,7 @@
     "sheetdb-node": "^0.0.12"
   },
   "scripts": {
-    "start": "node index.js",
+    "start": "node --env-file .env index.js",
     "test": "jest"
   },
   "devDependencies": {
