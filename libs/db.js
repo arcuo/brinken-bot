@@ -3,6 +3,8 @@
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 import "dotenv/config";
+import { generateAllPairings, getLastWednesdayFromNow } from "./utils";
+import { DateTime } from "luxon";
 
 export class DBClient {
 	/** @type {Awaited<ReturnType<typeof open>>} */
@@ -33,30 +35,30 @@ export class DBClient {
 		return this.db.all("SELECT * FROM beboere");
 	}
 
-	/**
-	 * Get mumsdag or next mumsdag
-	 * @param {string | undefined} date
-	 * @returns {Promise<{date: string, mainChefId: number, sousChefId: number}>}
+	/** Get last mumsdag
+	 * @returns {Promise<{date: string, mainChefId: number, sousChefId: number} | undefined>}
 	 */
-	getMumsdag(date = undefined) {
+	getLastMumsdag() {
+		return this.db.get(
+			"SELECT * FROM mumsdag WHERE archived = 0 ORDER BY date DESC LIMIT 1",
+		);
+	}
+
+	getAllMumsdag() {
+		return this.db.all("SELECT * FROM mumsdag WHERE archived = 0");
+	}
+
+	/**
+	 * Get mumsdage
+	 * @param {{date?: string, after?: string, before?: string, limit?: number}} opts
+	 * @returns {Promise<{date: string, mainChefId: number, sousChefId: number}[]>}
+	 */
+	getMumsdag(opts = {}) {
+		const { date, after, before, limit = 10 } = opts;
 		if (date) {
 			return this.db.get("SELECT * FROM mumsdag WHERE date = ?", date);
 		}
 
-		const now = new Date();
-		return this.db.get(
-			"SELECT * FROM mumsdag WHERE date <= ? ORDER BY date ASC LIMIT 1",
-			now.toISOString(),
-		);
-	}
-
-	/**
-	 * Get all mumsdag
-	 * @param {{after?: string, before?: string, limit?: number}} opts
-	 * @returns {Promise<{date: string, mainChefId: number, sousChefId: number}[]>}
-	 */
-	getAllMumsdag(opts = {}) {
-		const { after, before, limit = 10 } = opts;
 		let query = "SELECT * FROM mumsdag WHERE archived = 0";
 		if (after) {
 			query += " AND date > ? ";
@@ -68,6 +70,28 @@ export class DBClient {
 
 		query += " ORDER BY date ASC LIMIT ?";
 		return this.db.all(query, ...[after, before].filter(Boolean), limit);
+	}
+
+	/** Add new mumsdag pairings
+	 * @param {string | undefined} fromDate
+	 */
+	async addNewMumsdagPairings(fromDate) {
+		const pairings = generateAllPairings(10);
+		const lastMumsdag = await this.getLastMumsdag();
+		let date = DateTime.fromISO(
+			fromDate ?? lastMumsdag?.date ?? getLastWednesdayFromNow().toISOString(),
+		);
+
+		await this.insertMumsdag(
+			pairings.map(([x, y]) => {
+				date = date.plus({ weeks: 1 });
+				return {
+					date: date.toISO(),
+					mainChefId: x,
+					sousChefId: y,
+				};
+			}),
+		);
 	}
 
 	/**
@@ -127,7 +151,8 @@ export class DBClient {
 
 		try {
 			if (clear) {
-				await this.clear(true);
+				await this.db.run("DROP TABLE IF EXISTS mumsdag");
+				await this.db.run("DROP TABLE IF EXISTS beboere");
 			}
 
 			// Beboer table
@@ -186,5 +211,5 @@ const beboere = [
 ];
 
 if (process.argv[2] === "migrate") {
-	await db.migrate(process.argv[3] === "clear");
+	await dbclient.migrate(process.argv[3] === "clear");
 }

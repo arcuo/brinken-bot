@@ -101,3 +101,15 @@ export function stringifyDiscordClass(discordClass) {
 		(_key, value) => (typeof value === "bigint" ? value.toString() : value), // return everything else unchanged
 	);
 }
+
+/**
+ * Get the next wednesday
+ * @returns {Date}
+ */
+export function getLastWednesdayFromNow() {
+	const now = new Date();
+	while (now.getDay() !== 3) {
+		now.setDate(now.getDate() - 1);
+	}
+	return now;
+}

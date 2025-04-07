@@ -1,12 +1,12 @@
 import { DateTime } from "luxon";
-import * as birthday from "./libs/birthday.js";
-import * as dinner from "./libs/dinner.js";
+import * as birthdayCRON from "./libs/birthday/cron.js";
+import * as dinnerCRON from "./libs/dinner/cron.js";
 import * as globals from "./libs/globals.js";
 import { slashCommands } from "./libs/slash-commands.js";
 import { Client, Collection, Events, GatewayIntentBits } from "discord.js";
 import { stringifyDiscordClass } from "./libs/utils.js";
 import express from "express";
-import * as general from "./libs/general.js";
+import * as housemeetingCRON from "./libs/housemeeting/cron.js";
 
 const expApp = express();
 
@@ -38,19 +38,19 @@ expApp.listen(expressPort, () => {
 async function handleDay() {
 	const inAWeek = DateTime.now().plus({ weeks: 1 }).toFormat("MM-dd");
 	console.log(inAWeek);
-	await birthday.handleWeekBeforeBirthday(inAWeek);
+	await birthdayCRON.handleWeekBeforeBirthday(inAWeek);
 	const inADay = DateTime.now().plus({ days: 1 }).toFormat("MM-dd");
 	console.log(inADay);
-	await birthday.handleDayBeforeBirthday(inADay);
+	await birthdayCRON.handleDayBeforeBirthday(inADay);
 	const inTwoDays = DateTime.now().plus({ days: 2 });
 	console.log(inTwoDays);
-	await general.handleTwoDaysBeforeHouseMeeting(inTwoDays);
+	await housemeetingCRON.handleTwoDaysBeforeHouseMeeting(inTwoDays);
 	const inThreeDays = DateTime.now().plus({ days: 3 });
 	console.log(inThreeDays);
-	await dinner.handleThreeDaysBeforeDinner(inThreeDays);
+	await dinnerCRON.handleThreeDaysBeforeDinner(inThreeDays);
 	const today = DateTime.now();
 	console.log(today);
-	await dinner.handleDayOfDinner(today);
+	await dinnerCRON.handleDayOfDinner(today);
 }
 
 async function handleSlashCommand(interaction) {
@@ -86,13 +86,14 @@ async function handleSlashCommand(interaction) {
 	}
 }
 
+const allListeners = globals.globalActionListeners
+	.concat(dinner.dinnerActionListeners)
+	.concat(birthday.birthdayActionListeners);
+
 async function handleButtonInteraction(interaction) {
 	const [actionId, actionValue] = interaction.customId.split("*");
 
-	const handler = globals.globalActionListeners
-		.concat(dinner.dinnerActionListeners)
-		.concat(birthday.birthdayActionListeners)
-		.find(([id]) => id === actionId)?.[1];
+	const handler = allListeners.find(([id]) => id === actionId)?.[1];
 
 	if (handler === undefined) {
 		await interaction.reply({

@@ -14,7 +14,9 @@ export const slashCommands = [
 					"Hej! Her er alle de handlinger og informationer jeg kan tilbyde dig!",
 				components: [...getMoreButtons("none")],
 			});
+
 			const reply = await interaction.fetchReply();
+
 			cacheInteraction({
 				timestamp: reply.createdTimestamp,
 				interaction,

@@ -1,4 +1,4 @@
-import { generateAllPairings } from "./utils";
+import { generateAllPairings } from "../libs/utils.js";
 import _ from "lodash";
 
 // Only test with 10 because that's what we're making the function for

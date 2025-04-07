@@ -1,5 +1,5 @@
-import "./index.js";
-import { DISCORD_GUILD_ID, discordClient } from "./libs/globals.js";
+import "../index.js";
+import { DISCORD_GUILD_ID, discordClient } from "../libs/globals.js";
 
 const guild = await discordClient.guilds.fetch(DISCORD_GUILD_ID);
 await guild.emojis

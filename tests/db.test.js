@@ -1,4 +1,4 @@
-import { DBClient } from "./db";
+import { DBClient } from "../libs/db";
 
 describe("DB tests", async () => {
 	const db = await new DBClient().init(":memory:");
@@ -28,7 +28,7 @@ describe("DB tests", async () => {
 				{ date: date.toISOString(), mainChefId: 1, sousChefId: 2 },
 			]);
 
-			const mumsdag = await db.getMumsdag();
+			const mumsdag = await db.getMumsdag({ date: date.toISOString() });
 
 			expect(mumsdag).toBeDefined();
 			expect(mumsdag.date).toBe(date.toISOString());
@@ -44,11 +44,11 @@ describe("DB tests", async () => {
 				{ date: date1.toISOString(), mainChefId: 1, sousChefId: 2 },
 				{ date: tomorrow.toISOString(), mainChefId: 2, sousChefId: 3 },
 			]);
-			expect((await db.getAllMumsdag()).length).toBe(2);
+			expect((await db.getMumsdag()).length).toBe(2);
 			await db.deleteMumsdag();
-			expect((await db.getAllMumsdag()).length).toBe(1);
+			expect((await db.getMumsdag()).length).toBe(1);
 			await db.deleteMumsdag(tomorrow.toISOString());
-			expect((await db.getAllMumsdag()).length).toBe(0);
+			expect((await db.getMumsdag()).length).toBe(0);
 		});
 
 		it("archiveMumsdag", async () => {
@@ -60,14 +60,14 @@ describe("DB tests", async () => {
 				{ date: date2.toISOString(), mainChefId: 2, sousChefId: 3 },
 			]);
 
-			expect((await db.getAllMumsdag()).length).toBe(2);
+			expect((await db.getMumsdag()).length).toBe(2);
 			await db.archiveMumsdag(date1.toISOString());
-			expect((await db.getAllMumsdag()).length).toBe(1);
+			expect((await db.getMumsdag()).length).toBe(1);
 			await db.archiveMumsdag(date2.toISOString());
-			expect((await db.getAllMumsdag()).length).toBe(0);
+			expect((await db.getMumsdag()).length).toBe(0);
 		});
 
-		it("getAllMumsdag", async () => {
+		it("getMumsdag", async () => {
 			const date1 = new Date("2023-09-25");
 			const date2 = new Date("2023-09-26");
 
@@ -76,13 +76,15 @@ describe("DB tests", async () => {
 				{ date: date2.toISOString(), mainChefId: 2, sousChefId: 3 },
 			]);
 
-			expect(await db.getAllMumsdag()).toHaveLength(2);
+			expect(await db.getMumsdag()).toHaveLength(2);
 
-			expect(await db.getAllMumsdag({after: date1.toISOString()})).toHaveLength(1);
-			expect(await db.getAllMumsdag({before: date2.toISOString()})).toHaveLength(1);
-		});
+			expect(await db.getMumsdag({ after: date1.toISOString() })).toHaveLength(
+				1,
+			);
+			expect(await db.getMumsdag({ before: date2.toISOString() })).toHaveLength(
+				1,
+			);
 
-		it("getMumsdag", async () => {
 			const yesterday = new Date();
 			yesterday.setDate(yesterday.getDate() - 1);
 			const tomorrow = new Date();
@@ -92,13 +94,40 @@ describe("DB tests", async () => {
 				{ date: tomorrow.toISOString(), mainChefId: 1, sousChefId: 2 },
 			]);
 
-			const mumsdag = await db.getMumsdag(yesterday.toISOString());
+			const mumsdag = await db.getMumsdag({ date: yesterday.toISOString() });
 			expect(mumsdag).toBeDefined();
 			expect(mumsdag.date).toBe(yesterday.toISOString());
 
-			const nextMumsdag = await db.getMumsdag(tomorrow.toISOString());
+			const nextMumsdag = await db.getMumsdag({ date: tomorrow.toISOString() });
 			expect(nextMumsdag).toBeDefined();
 			expect(nextMumsdag.date).toBe(tomorrow.toISOString());
+		});
+
+		it("getLastMumsdag", async () => {
+			expect(await db.getLastMumsdag()).toBeUndefined();
+
+			await db.insertMumsdag([
+				{
+					date: new Date("2023-09-25").toISOString(),
+					mainChefId: 1,
+					sousChefId: 2,
+				},
+				{
+					date: new Date("2023-09-26").toISOString(),
+					mainChefId: 2,
+					sousChefId: 3,
+				},
+			]);
+
+			const lastMumsdag = await db.getLastMumsdag();
+			expect(lastMumsdag).toBeDefined();
+			expect(lastMumsdag.date).toBe(new Date("2023-09-26").toISOString());
+		});
+
+		it("addNewMumsdagPairings", async () => {
+			await db.addNewMumsdagPairings();
+			const allMumsdag = await db.getMumsdag();
+			expect(allMumsdag).toHaveLength(10);
 		});
 	});
 });
