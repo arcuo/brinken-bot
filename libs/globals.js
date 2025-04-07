@@ -1,4 +1,3 @@
-import sheetdb from "sheetdb-node";
 import {
 	ActionRowBuilder,
 	ButtonBuilder,
@@ -12,9 +11,6 @@ export const DISCORD_TEST_CHANNEL_ID = "1289988414476779671";
 export const DISCORD_TEST_CHANNEL_NAME = "brinkenbot-test";
 export const DISCORD_CLIENT_ID = "1289978773764309112";
 
-export const BEBOERE_SHEET_NAME = "Beboere";
-export const MUMSDAG_SHEET_NAME = "Torsdagstallerken";
-export const ARCHIVE_MUMSDAG_SHEET_NAME = "Torsdagstallerkensarkiv";
 export const RUNNING_IN_PRODUCTION = process.env.RENDER === "true";
 export const MUMSDAG_CHANNEL_ID = RUNNING_IN_PRODUCTION
 	? "1325490174909612124"
@@ -25,12 +21,6 @@ export const GENERAL_CHANNEL_ID = RUNNING_IN_PRODUCTION
 export const THIS_BOT_USER_ID = "1289978773764309112";
 
 export const deleteMessageActionId = "delete-message";
-
-export const sheetDbClient = sheetdb({
-	address: "jp1hjy317fz23",
-	auth_login: process.env.SHEET_DB_LOGIN,
-	auth_password: process.env.SHEET_DB_PASSWORD,
-});
 
 /**
  * @type {Client<true>}
@@ -61,7 +51,6 @@ export const globalActionListeners = [
 				await interaction.reply({
 					content:
 						"Discord tillader kun for mig at slette beskeder for dig indenfor 15 minutter af at de er blevet sendt, så du bliver desværre nødt til at håndtere den her selv. Lige under beskeden skulle der gerne stå at kun du kan se beskeden, og så et link der lader dig fjerne beskeden",
-					ephemeral: true,
 				});
 				return;
 			}
@@ -73,7 +62,6 @@ export const globalActionListeners = [
 		"see-more-actions",
 		async ({ interaction, actionValue }) => {
 			await interaction.reply({
-				ephemeral: true,
 				content: "Flere handlinger",
 				components: [
 					...getMoreButtons(actionValue),

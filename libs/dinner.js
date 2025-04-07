@@ -1,14 +1,10 @@
 import { generateAllPairings, stringNaturalLanguageList } from "./utils.js";
 import {
-	sheetDbClient,
-	BEBOERE_SHEET_NAME,
-	MUMSDAG_SHEET_NAME,
 	MUMSDAG_CHANNEL_ID,
 	THIS_BOT_USER_ID,
 	deleteMessageActionId,
 	sendDinnerMessage,
 	RUNNING_IN_PRODUCTION,
-	ARCHIVE_MUMSDAG_SHEET_NAME,
 	DISCORD_GUILD_ID,
 	cacheInteraction,
 	isInteractionValid,
@@ -28,6 +24,7 @@ import {
 	Message,
 	TextChannel,
 } from "discord.js";
+import { dbclient } from "./db.js";
 
 /**
  * @callback ActionlistenerCb
@@ -88,13 +85,13 @@ export const dinnerActionListeners = [
 		},
 	],
 	[
+		// TODO: Fix this for sqlite
 		"edit-dinner-schedule",
 		async ({ interaction }) => {
 			await interaction.reply({
-				ephemeral: true,
 				content: `Det kan godt være det følgende virker lidt skræmmende for en ikke teknisk person, men jeg ved du godt kan klare det, og bare rolig hvis noget går galt så fikser vi det bare igen, ingen fare overhovedet :heart:.
 
-For at beholde så meget fleksibilitet som muligt har vi valgt at den bedste måde, trods lidt kompleksitet, er at rette direkte i vores "database." Vi har dog heldigvis bare brugt Google Sheets som vores database for at forhåbentligt gøre det så nemt som muligt at rette i. Tryk på knappen nedenfor for at gå til regnearket, hvor du først vil se den mere menneskelæselige version hvor du kan få overblik over hvordan du vil rette. Når du så rent faktisk skal rette går du over til "${MUMSDAG_SHEET_NAME}" arket, dette er også tydeligt markeret i regnearket, og her kan du så lave de rent faktiske database rettelser. Computere er dumme så det er vigtigt her at du følger formatet med at bruge tal til at referere til os beboere og at datoerne er i År-Måned-Dato format, men som vi skrev ovenfor, bare stol på dig selv, det skal nok gå, og hvis noget går galt så fikser de mere tekniske personer i kollektivet det bare. Der er intet der er i fare for at blive fuldstændig ødelagt, vi kan altid finde tilbage til den tilstand den var i før.`,
+For at beholde så meget fleksibilitet som muligt har vi valgt at den bedste måde, trods lidt kompleksitet, er at rette direkte i vores "database." Vi har dog heldigvis bare brugt Google Sheets som vores database for at forhåbentligt gøre det så nemt som muligt at rette i. Tryk på knappen nedenfor for at gå til regnearket, hvor du først vil se den mere menneskelæselige version hvor du kan få overblik over hvordan du vil rette. Når du så rent faktisk skal rette går du over til "${MUMSDAG_SHEET_NAME}" arket, dette er også tydeligt markeret i regnearket, og her kan du så lave de rent faktiske database rettelser. Computere er dumme så det er vigtigt her at du følger formatet med at bruge tal til at referere til os beboere og at dateerne er i År-Måned-Date format, men som vi skrev ovenfor, bare stol på dig selv, det skal nok gå, og hvis noget går galt så fikser de mere tekniske personer i kollektivet det bare. Der er intet der er i fare for at blive fuldstændig ødelagt, vi kan altid finde tilbage til den tilstand den var i før.`,
 				components: [
 					new ActionRowBuilder().addComponents(
 						new ButtonBuilder()
@@ -129,33 +126,26 @@ async function handlerDinnerScheduleActionResponse({
 	disableShowMore = false,
 	replyAlreadyAckhnowledged = false,
 }) {
-	const members = JSON.parse(
-		await sheetDbClient.read({ sheet: BEBOERE_SHEET_NAME }),
-	);
+	const members = await dbclient.getAllBeboer();
+	const allMumsdag = await dbclient.getAllMumsdag();
 
-	const allDbRows = JSON.parse(
-		await sheetDbClient.read({
-			sheet: MUMSDAG_SHEET_NAME,
-		}),
-	);
-
-	const targetDbRows = allDbRows.filter(
+	const targetDbRows = allMumsdag.filter(
 		(x) =>
-			x.dato >= startDate.toFormat("yyyy-MM-dd") &&
-			x.dato <= endDate.toFormat("yyyy-MM-dd"),
+			x.date >= startDate.toFormat("yyyy-MM-dd") &&
+			x.date <= endDate.toFormat("yyyy-MM-dd"),
 	);
 
 	const hasMore =
-		allDbRows.find((x) => x.dato > endDate.toFormat("yyyy-MM-dd")) !==
+		allMumsdag.find((x) => x.date > endDate.toFormat("yyyy-MM-dd")) !==
 		undefined;
 
 	const headChefJoined = lodashJoins.hashInnerJoin(
 		members,
 		(x) => x.id,
 		targetDbRows,
-		(x) => x.hovedkok,
+		(x) => x.mainChefId,
 	);
-	const formattedObjects = lodashJoins.hashInnerJoin(
+sousChefId	const formattedObjects = lodashJoins.hashInnerJoin(
 		members,
 		(x) => x.id,
 		headChefJoined,
@@ -167,10 +157,10 @@ async function handlerDinnerScheduleActionResponse({
 			assistentDiscordString: memb["discord-id"]
 				? `<@${memb["discord-id"]}>`
 				: `**${memb.navn}**`,
-			date: DateTime.fromISO(headChef.dato)
+			date: DateTime.fromISO(headChef.date)
 				.setLocale("da-dk")
 				.toLocaleString(DateTime.DATE_FULL),
-			sortableDateString: headChef.dato,
+			sortableDateString: headChef.date,
 		}),
 	);
 
@@ -223,12 +213,10 @@ ${orderedFormattedObjects
 			await interaction.reply({
 				content,
 				components: [actionRow],
-				ephemeral: true,
 			});
 			await interaction.followUp({
 				content:
 					"Da Discord ikke tillader at opdatere beskeder der er over 15 minutter gamle, så har jeg istedet sendt dig en ny besked",
-				ephemeral: true,
 			});
 			const reply = await interaction.fetchReply();
 			cacheInteraction({
@@ -250,7 +238,6 @@ ${orderedFormattedObjects
 		await interaction.reply({
 			content,
 			components: [actionRow],
-			ephemeral: true,
 		});
 		const reply = await interaction.fetchReply();
 		cacheInteraction({
@@ -268,20 +255,14 @@ export async function handleThreeDaysBeforeDinner(onsdagLuxonDateTime) {
 	if (onsdagLuxonDateTime.weekday !== 3) {
 		return;
 	}
-	const members = JSON.parse(
-		await sheetDbClient.read({ sheet: BEBOERE_SHEET_NAME }),
-	);
+	const members = await dbclient.getAllBeboer();
 
 	if (RUNNING_IN_PRODUCTION) {
-		const allDinnerRows = JSON.parse(
-			await sheetDbClient.read({
-				sheet: MUMSDAG_SHEET_NAME,
-			}),
-		);
+		const allDinnerRows = await dbclient.getAllMumsdag();
 
-		const maxDateRow = _.maxBy(allDinnerRows, "dato");
+		const maxDateRow = _.maxBy(allDinnerRows, "date");
 		if (
-			maxDateRow.dato <
+			maxDateRow.date <
 			onsdagLuxonDateTime.plus({ months: 3 }).toFormat("yyyy-MM-dd")
 		) {
 			const nextPairings = generateAllPairings(10);
@@ -293,17 +274,16 @@ export async function handleThreeDaysBeforeDinner(onsdagLuxonDateTime) {
 				return;
 			}
 
-			let curDate = DateTime.fromISO(maxDateRow.dato);
-			await sheetDbClient.create(
+			let curDate = DateTime.fromISO(maxDateRow.date);
+			await dbclient.insertMumsdag(
 				nextPairings.map((x) => {
 					curDate = curDate.plus({ weeks: 1 });
 					return {
-						dato: curDate.toFormat("yyyy-MM-dd"),
-						hovedkok: x[0],
-						kokkeassistent: x[1],
+						date: curDate.toFormat("yyyy-MM-dd"),
+						mainChefId: x[0],
+						sousChefId: x[1],
 					};
 				}),
-				MUMSDAG_SHEET_NAME,
 			);
 
 			await sendGeneralMessage(
@@ -318,25 +298,18 @@ Der er nu madlavningsplan indtil ${curDate
 		}
 
 		for (const x of allDinnerRows) {
-			if (x.dato < onsdagLuxonDateTime.toFormat("yyyy-MM-dd")) {
-				await sheetDbClient.create(x, ARCHIVE_MUMSDAG_SHEET_NAME);
-				await sheetDbClient.delete("dato", x.dato, MUMSDAG_SHEET_NAME);
+			if (x.date < onsdagLuxonDateTime.toFormat("yyyy-MM-dd")) {
+				await dbclient.archiveMumsdag(x.date);
 			}
 		}
 	}
 
 	const dbRow = JSON.parse(
-		await sheetDbClient.read({
-			sheet: MUMSDAG_SHEET_NAME,
-			search: {
-				dato: onsdagLuxonDateTime.toFormat("yyyy-MM-dd"),
-				single_object: true,
-			},
-		}),
+		await dbclient.getMumsdag(onsdagLuxonDateTime.toFormat("yyyy-MM-dd")),
 	);
 
-	const headChef = getUserByRowId(dbRow.hovedkok, members);
-	const assistent = getUserByRowId(dbRow.kokkeassistent, members);
+	const headChef = dbclient.getBeboer(dbRow.mainChefId);
+	const assistent = dbclient.getBeboer(dbRow.sousChefId);
 
 	const msgLines = [
 		"# Mumsdag",
@@ -369,13 +342,7 @@ Der er nu madlavningsplan indtil ${curDate
 		await reactionMessage.react(emoji);
 	}
 }
-function getUserByRowId(rowId, members) {
-	const result = members.find((x) => x.id === rowId);
-	if (result === undefined) {
-		throw new Error("Invalid row id for users");
-	}
-	return result;
-}
+
 /**
  * @argument thursdayLuxonDateTime {DateTime}
  */
@@ -417,10 +384,9 @@ export async function handleDayOfDinner(thursdayLuxonDateTime) {
 		await Promise.all(reactions.map((x) => x.users.fetch()))
 	).flatMap((x) => [...x.values()]);
 
-	const members = JSON.parse(
-		await sheetDbClient.read({ sheet: BEBOERE_SHEET_NAME }),
-	);
+	const members = await dbclient.getAllBeboer();
 	const guild = await discordClient.guilds.fetch(DISCORD_GUILD_ID);
+
 	const guildUserMembers = [...(await guild.members.fetch()).values()]
 		.map((x) => x.user)
 		.filter((x) => members.find((y) => y["discord-id"] === x.id) !== undefined);

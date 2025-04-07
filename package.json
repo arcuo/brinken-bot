@@ -7,16 +7,21 @@
   "author": "Emil Goldsmith Olesen <emilgoldsmith94@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "date-fns": "^4.1.0",
     "discord.js": "^14.16.3",
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "lodash": "^4.17.21",
     "lodash-joins": "^3.1.1",
     "luxon": "^3.4.4",
-    "sheetdb-node": "^0.0.12"
+    "sheetdb-node": "^0.0.12",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7"
   },
   "scripts": {
-    "start": "node --env-file .env index.js",
-    "test": "jest"
+    "start": "node index.js",
+    "test": "jest",
+    "db:migrate": "node libs/db.js migrate"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

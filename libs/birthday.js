@@ -1,8 +1,6 @@
 import _ from "lodash";
 import { DateTime } from "luxon";
 import {
-	sheetDbClient,
-	BEBOERE_SHEET_NAME,
 	deleteMessageActionId,
 	sendBirthdayMessage,
 	RUNNING_IN_PRODUCTION,
@@ -16,6 +14,7 @@ import {
 } from "./globals.js";
 import { ActionRowBuilder, ButtonBuilder } from "@discordjs/builders";
 import { ButtonStyle, ChannelType, PermissionsBitField } from "discord.js";
+import { dbclient } from "./db.js";
 
 /**
  * @callback ActionlistenerCb
@@ -45,7 +44,6 @@ export const birthdayActionListeners = [
 			];
 
 			await interaction.reply({
-				ephemeral: true,
 				content: `\
 # Næste Års Fødselsdage
 
@@ -231,9 +229,7 @@ export async function handleDayBeforeBirthday(
 }
 
 async function getBirthdayPeople(targetBirthdayMMDD) {
-	const members = JSON.parse(
-		await sheetDbClient.read({ sheet: BEBOERE_SHEET_NAME }),
-	);
+	const members = await dbclient.getAllBeboer();
 
 	const sortedBirthdays = _.chain(members)
 		.map((x) => {
