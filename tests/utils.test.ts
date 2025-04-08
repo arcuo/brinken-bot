@@ -1,5 +1,6 @@
-import { generateAllPairings } from "../libs/utils.js";
+import { generateAllPairings } from "../libs/utils.ts";
 import _ from "lodash";
+import { describe, it, expect } from "bun:test";
 
 // Only test with 10 because that's what we're making the function for
 const n = 10;

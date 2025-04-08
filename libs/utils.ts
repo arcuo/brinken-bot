@@ -10,17 +10,16 @@ export function stringNaturalLanguageList(items) {
 	return `${items.slice(0, items.length - 1).join(", ")} og ${items[items.length - 1]}`;
 }
 
-/**
- * @argument items {any[]}
- */
-export function richTextNaturalLanguageList(items) {
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+export function richTextNaturalLanguageList(items: any[]) {
 	if (items.length <= 0) {
 		return [];
 	}
 	if (items.length === 1) {
 		return [items[0]];
 	}
-	const result = [];
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	const result: any[] = [];
 	items.forEach((value, index) => {
 		result.push(value);
 		if (index < items.length - 2) {
@@ -35,22 +34,22 @@ export function richTextNaturalLanguageList(items) {
 /**
  * Inspired by https://math.stackexchange.com/questions/34328/how-to-rotate-n-individuals-at-a-dinner-party-so-that-every-guest-meets-every-ot
  */
-export function generateAllPairings(n) {
+export function generateAllPairings(n: number) {
 	if (n !== 10) {
 		throw new Error(
 			"Only N = 10 supported for now. Hasn't been tested or adapted for other N",
 		);
 	}
 
-	const topRow = [];
-	const bottomRow = [];
+	const topRow: number[] = [];
+	const bottomRow: number[] = [];
 
 	for (let i = 0; i < n / 2; i++) {
 		topRow.push(i);
 		bottomRow.push(i + n / 2);
 	}
 
-	const matches = [];
+	const matches: number[][] = [];
 
 	for (let i = 0; i < n - 1; i++) {
 		for (let j = 0; j < n / 2; j++) {
@@ -64,14 +63,16 @@ export function generateAllPairings(n) {
 		// Get first person in bottom row and shift everyone else one to the left
 		const xBottom = bottomRow.shift();
 		// Add the first person from the bottom row and shift everyone else one to the right
-		topRow.unshift(xBottom);
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		topRow.unshift(xBottom!);
 		// Move the first person from the bottom row one to the right as we only cycle everyone
 		// but the person sitting at the top left
 		topRow[1] = topRow[0];
 		// Reset the person at the top left to the top left position, we know this is always index 0
 		topRow[0] = 0;
 		// Add the last person from the top row to the bottom row right most position
-		bottomRow.push(xTop);
+		// biome-ignore lint/style/noNonNullAssertion: <explanation>
+		bottomRow.push(xTop!);
 		// This should result in a cycle of everyone but the top right person of one step in a clockwise direction
 	}
 
