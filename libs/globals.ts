@@ -118,8 +118,9 @@ async function handleButtonInteraction(interaction) {
 	}
 }
 
-export const RUNNING_IN_PRODUCTION = process.env.RENDER === "true";
-console.log('process.env:', process.env.MODE)
+export const RUNNING_IN_PRODUCTION = process.env.MODE !== "development";
+console.log("RUNNING_IN_PRODUCTION:", RUNNING_IN_PRODUCTION);
+
 export const MUMSDAG_CHANNEL_ID = RUNNING_IN_PRODUCTION
 	? "1325490174909612124"
 	: DISCORD_TEST_CHANNEL_ID;
