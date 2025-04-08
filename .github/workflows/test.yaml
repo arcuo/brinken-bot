@@ -9,4 +9,5 @@ jobs:
     steps: # Run ./test script
       - uses: actions/checkout@v3
       - run: ./test
-        env: DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        env: 
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
