@@ -1,0 +1,8 @@
+name: Cron jobs
+on: workflow_dispatch
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps: # Run ./test script
+      - uses: actions/checkout@v3
+      - run: ./test

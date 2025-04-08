@@ -4,7 +4,7 @@
   "type": "module",
   "main": "index.js",
   "repository": "git@github.com:emilgoldsmith/brinken-slackbot.git",
-  "author": "Emil Goldsmith Olesen <emilgoldsmith94@gmail.com>",
+  "author": "Emil Goldsmith Olesen <emilgoldsmith94@gmail.com> & Benjamin Zachariae <benjamin.zachariae@gmail.com>",
   "license": "MIT",
   "dependencies": {
     "date-fns": "^4.1.0",
@@ -19,13 +19,16 @@
     "sqlite3": "^5.1.7"
   },
   "scripts": {
-    "start": "node index.js",
-    "test": "jest",
-    "db:migrate": "node libs/db.js migrate"
+    "start": "bun run index.ts",
+    "db:migrate": "bun libs/db.ts migrate",
+    "build:server-arm64": "bun build --compile --target=bun-linux-arm64 ./index.ts --outfile server-arm64",
+    "build:server": "bun build --compile ./index.ts --outfile server"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.3",
+    "@types/bun": "^1.2.8",
+    "@types/luxon": "^3.6.2",
     "babel-jest": "^29.7.0",
     "jest": "^29.7.0",
     "jest-expect-message": "^1.1.3"
