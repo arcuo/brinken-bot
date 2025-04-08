@@ -1,0 +1,12 @@
+name: Test Action
+on: 
+  workflow_dispatch:
+  schedule:
+    - cron: '* * * * *' # Runs every minute
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps: # Run ./test script
+      - uses: actions/checkout@v3
+      - run: ./test
+        env: DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
