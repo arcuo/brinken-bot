@@ -22,8 +22,8 @@
     "start": "bun run index.ts",
     "db:migrate": "bun libs/db.ts migrate",
     "build:server-arm64": "bun build --compile --target=bun-linux-arm64 ./index.ts --outfile server-arm64",
-    "build:server": "bun build --compile ./index.ts --outfile server",
-    "build:handleDay": "bun build --compile ./libs/handleDay.ts --outfile handleDay"
+    "build:server": "bun build --compile ./index.ts --outfile executables/server",
+    "build:handleDay": "bun build --compile ./libs/handleDay.ts --outfile executables/handleDay"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
