@@ -4,50 +4,11 @@ import * as globals from "../globals.js";
 import { ChannelType, OverwriteType, PermissionsBitField } from "discord.js";
 
 export async function handleWeekBeforeBirthday(
-	targetBirthdayMMDD,
+	targetBirthdayMMDD: string,
 	channelNameSuffix = "",
 ) {
-	const { birthdayPeople, sortedBirthdays, members, birthdayYear } =
-		await getBirthdayPeople(targetBirthdayMMDD);
-
-	if (birthdayPeople.length <= 0) return;
-
-	const lowestBirthdayIndex = sortedBirthdays.findIndex(
-		(x) => x.sortableBirthday === targetBirthdayMMDD,
-	);
-	if (lowestBirthdayIndex === -1) {
-		await globals.sendMessageToChannel({
-			channelId: globals.DISCORD_TEST_CHANNEL_ID,
-			content:
-				"'Impossible' error occurred, couldn't find birthday person after finding birthday people",
-		});
-		return;
-	}
-
-	let firstResponsibleIndex = lowestBirthdayIndex - 1;
-	if (firstResponsibleIndex === -1) {
-		firstResponsibleIndex = sortedBirthdays.length - 1;
-	}
-
-	const responsiblePeople = sortedBirthdays.filter(
-		(x) =>
-			x.sortableBirthday ===
-			sortedBirthdays[firstResponsibleIndex].sortableBirthday,
-	);
-
-	if (responsiblePeople.length <= 0) {
-		await globals.sendMessageToChannel({
-			channelId: globals.DISCORD_TEST_CHANNEL_ID,
-			content: `Couldn't find any responsible people for the birthday. Sorted birthdays: ${JSON.stringify(
-				sortedBirthdays,
-			)}`,
-		});
-		return;
-	}
-
-	const birthdayCelebrators = members
-		.filter((m) => !birthdayPeople.map((p) => p.id).includes(m.id))
-		.filter((x) => x["discord-id"]);
+	const { birthdayPeople, birthdayYear, birthdayResponsible } =
+		getBirthdayPeople(targetBirthdayMMDD);
 
 	const birthdayChannelName = buildBirthdayChannelName(
 		birthdayPeople,
@@ -55,9 +16,6 @@ export async function handleWeekBeforeBirthday(
 		channelNameSuffix,
 	);
 
-	/**
-	 * @type string
-	 */
 	let birthdayChannelId = globals.DISCORD_TEST_CHANNEL_ID;
 
 	if (globals.RUNNING_IN_PRODUCTION) {
@@ -69,7 +27,7 @@ export async function handleWeekBeforeBirthday(
 			type: ChannelType.GuildText,
 			name: birthdayChannelName,
 			permissionOverwrites: [
-				...birthdayCelebrators.map((x) => ({
+				...birthdayPeople.map((x) => ({
 					type: OverwriteType.Member,
 					id: x["discord-id"],
 					allow: [PermissionsBitField.Flags.ViewChannel],
@@ -109,16 +67,12 @@ ${birthdayPeople
 			.setLocale("da-DK")
 			.toFormat(
 				"EEEE 'd.' dd. MMMM",
-			)}, og de hovedansvarlige for fødselsdag morgenmad er:
-      ${responsiblePeople.map(
-				(x) =>
-					`- ${x["discord-id"] ? `<@${x["discord-id"]}>` : `**${x.name}**`}`,
-			)}`,
+			)}, og den hovedansvarlige for fødselsdag morgenmad er: - ${birthdayResponsible["discord-id"] ? `<@${birthdayResponsible["discord-id"]}>` : `**${birthdayResponsible.name}**`}`,
 	});
 }
 
 export async function handleDayBeforeBirthday(
-	targetBirthdayMMDD,
+	targetBirthdayMMDD: string,
 	channelNameOverride = null,
 ) {
 	let birthdayChannelName: string;
@@ -126,7 +80,7 @@ export async function handleDayBeforeBirthday(
 		birthdayChannelName = channelNameOverride;
 	} else {
 		const { birthdayPeople, birthdayYear } =
-			await getBirthdayPeople(targetBirthdayMMDD);
+			getBirthdayPeople(targetBirthdayMMDD);
 		if (birthdayPeople.length <= 0) return;
 
 		birthdayChannelName = buildBirthdayChannelName(

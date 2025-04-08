@@ -2,42 +2,24 @@
   "name": "brinken-slackbot",
   "version": "1.0.0",
   "type": "module",
-  "main": "index.js",
+  "main": "index.ts",
   "repository": "git@github.com:emilgoldsmith/brinken-slackbot.git",
   "author": "Emil Goldsmith Olesen <emilgoldsmith94@gmail.com> & Benjamin Zachariae <benjamin.zachariae@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "date-fns": "^4.1.0",
     "discord.js": "^14.16.3",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "lodash": "^4.17.21",
-    "lodash-joins": "^3.1.1",
-    "luxon": "^3.4.4",
-    "sheetdb-node": "^0.0.12",
-    "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7"
+    "luxon": "^3.4.4"
   },
   "scripts": {
-    "start": "bun run index.ts",
+    "dev": "MODE=development bun run index.ts",
     "db:migrate": "bun libs/db.ts migrate",
-    "build:server-arm64": "bun build --compile --target=bun-linux-arm64 ./index.ts --outfile server-arm64",
-    "build:server": "bun build --compile ./index.ts --outfile executables/server",
-    "build:handleDay": "bun build --compile ./libs/handleDay.ts --outfile executables/handleDay"
+    "build:server-arm64": "bun build --compile --minify --target=bun-linux-arm64 ./index.ts --outfile server-arm64",
+    "build:server": "bun build --compile --minify ./index.ts --outfile executables/server",
+    "build:handleDay": "bun build --compile --minify ./scripts/handle_day.ts --outfile executables/handleDay"
   },
   "devDependencies": {
-    "@babel/core": "^7.25.2",
-    "@babel/preset-env": "^7.25.3",
     "@types/bun": "^1.2.8",
-    "@types/luxon": "^3.6.2",
-    "babel-jest": "^29.7.0",
-    "jest": "^29.7.0",
-    "jest-expect-message": "^1.1.3"
+    "@types/luxon": "^3.6.2"
   },
-  "jest": {
-    "setupFilesAfterEnv": [
-      "jest-expect-message"
-    ]
-  },
-  "packageManager": "yarn@4.5.1"
+  "packageManager": "bun@1.2.8"
 }

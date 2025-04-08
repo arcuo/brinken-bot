@@ -1,5 +1,4 @@
 import { generateAllPairings } from "../libs/utils.ts";
-import _ from "lodash";
 import { describe, it, expect } from "bun:test";
 
 // Only test with 10 because that's what we're making the function for
@@ -73,16 +72,12 @@ describe("generateAllPairings", () => {
 
 	it("has people take min 4 headchefs and max 5 out of the 9 rounds", () => {
 		const pairings = generateAllPairings(n);
-		const numFirsts = {};
-		for (const x of pairings) {
-			const headchef = x[0];
-			if (headchef in numFirsts) {
-				numFirsts[headchef]++;
-			} else {
-				numFirsts[headchef] = 1;
-			}
-		}
-		_.forEach(numFirsts, (val, key) => {
+		const numFirsts = pairings.reduce<{ [key: string]: number }>((acc, x) => {
+			acc[x[0]] = (acc[x[0]] || 0) + 1;
+			return acc;
+		}, {});
+		// biome-ignore lint/complexity/noForEach: <explanation>
+		Object.entries(numFirsts).forEach(([key, val]) => {
 			expect(val, key).toBeGreaterThanOrEqual(4);
 			expect(val, key).toBeLessThanOrEqual(5);
 		});

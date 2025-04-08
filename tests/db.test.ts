@@ -1,3 +1,4 @@
+import { DateTime } from "luxon";
 import { DBClient } from "../libs/db";
 import { describe, it, beforeEach, expect } from "bun:test";
 
@@ -20,6 +21,14 @@ describe("DB tests", async () => {
 		const beboer = db.getAllBeboer();
 		expect(beboer).toBeDefined();
 		expect(beboer.length).toBe(9);
+
+		let last = beboer.shift();
+		while (last && beboer.length > 0) {
+			const lastDate = DateTime.fromISO(last.birthday).toFormat("MM-dd");
+			const nextDate = DateTime.fromISO(beboer[0].birthday).toFormat("MM-dd");
+			expect(lastDate.localeCompare(nextDate)).toBe(-1);
+			last = beboer.shift();
+		}
 	});
 
 	describe("mumsdag", () => {

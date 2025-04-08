@@ -1,4 +1,3 @@
-import _ from "lodash";
 import { DateTime } from "luxon";
 import {
 	deleteMessageActionId,
@@ -14,24 +13,21 @@ export const birthdayActionListeners: ActionListeners = [
 		id: "see-birthday-schedule",
 		action: async ({ interaction }) => {
 			if (!interaction.isRepliable()) return;
-			const { sortedBirthdays: sortedRelativeTo1Jan } =
-				await getBirthdayPeople("");
-			const [sortedBirthdaysThisYear, sortedBirthdaysNextYear] = _.chain(
-				sortedRelativeTo1Jan,
-			)
-				.partition((x) => x.birthdayYear === DateTime.now().year)
-				.value();
+			const { allBirthdays } = getBirthdayPeople("");
 
-			const sortedBirthdays = [
-				...sortedBirthdaysThisYear,
-				...sortedBirthdaysNextYear,
+			const indexOfNextyear = allBirthdays.findIndex(m => m.formattedBirthday.localeCompare(DateTime.now().toFormat("MM-dd")) < 0);
+			const birthdaysThisYear = allBirthdays.splice(0, indexOfNextyear);
+
+			const NextBirthdays = [
+				...allBirthdays,
+				...birthdaysThisYear,
 			];
 
 			await interaction.reply({
 				content: `\
 # Næste Års Fødselsdage
 
-${sortedBirthdays
+${NextBirthdays
 	.map(
 		(x) => `\
 - :flag_dk: d. **${DateTime.fromISO(x.birthday)

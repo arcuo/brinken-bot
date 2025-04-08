@@ -34,10 +34,17 @@ export class DBClient {
 	}
 
 	/**
-	 * Get all beboere
+	 * Get all beboere sorted by birthday
 	 */
 	getAllBeboer() {
-		return this.db.query<User, []>("SELECT * FROM beboere").all();
+		return this.db
+			.query<User, []>("SELECT * FROM beboere")
+			.all()
+			.sort((a, b) =>
+				DateTime.fromISO(a.birthday)
+					.toFormat("MM-dd")
+					.localeCompare(DateTime.fromISO(b.birthday).toFormat("MM-dd")),
+			);
 	}
 
 	/** Get last mumsdag

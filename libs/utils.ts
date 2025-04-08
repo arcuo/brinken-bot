@@ -1,5 +1,3 @@
-import _ from "lodash";
-
 export function stringNaturalLanguageList(items) {
 	if (items.length <= 0) {
 		return "";
@@ -90,7 +88,9 @@ export function generateAllPairings(n: number) {
 			numFirsts[x[0]]++;
 		}
 
-		success = _.every(numFirsts, (value) => value === 4 || value === 5);
+		success = Object.values(numFirsts).every(
+			(value) => value === 4 || value === 5,
+		);
 	}
 
 	return matches.map((x) => x.map((y) => y + 1));
