@@ -15,6 +15,7 @@ import {
 import { birthdayActionListeners } from "./birthday/actions.js";
 import { dinnerActionListeners } from "./dinner/actions.js";
 import { stringifyDiscordClass } from "./utils.js";
+import "dotenv/config";
 
 export const DISCORD_GUILD_ID = "1276132880552034446";
 export const DISCORD_TEST_CHANNEL_ID = "1289988414476779671";

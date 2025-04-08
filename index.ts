@@ -1,18 +1,3 @@
-import { handleDay } from "./libs/handleDay";
-
+import "./libs/globals.js";
 console.log("Starting");
-
-Bun.serve({
-	port: process.env.PORT ?? 3000,
-	routes: {
-		"/keep-alive": new Response("OK", { status: 200 }),
-		"/handle-day": {
-			POST: async (req, res) => {
-				await handleDay();
-				return new Response("OK", { status: 200 });
-			},
-		},
-	},
-});
-
 console.log("Discord App Initialized And Running");

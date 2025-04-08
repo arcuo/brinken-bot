@@ -1,7 +1,6 @@
 // Handling Database
-
-import { Database } from "bun:sqlite";
-import { open } from "sqlite";
+const Database = require("better-sqlite3");
+import type { Database as DBType } from "better-sqlite3";
 import { generateAllPairings, getLastWednesdayFromNow } from "./utils.js";
 import { DateTime } from "luxon";
 
@@ -19,7 +18,7 @@ export type Mumsdag = {
 };
 
 export class DBClient {
-	db: Database;
+	db: DBType;
 
 	constructor(filename) {
 		this.db = new Database(filename);
@@ -29,7 +28,7 @@ export class DBClient {
 	 */
 	getBeboer(name: string) {
 		return this.db
-			.query<User, string>("SELECT * FROM beboere WHERE name = ?")
+			.prepare<string, User>("SELECT * FROM beboere WHERE name = ?")
 			.get(name);
 	}
 
@@ -38,7 +37,7 @@ export class DBClient {
 	 */
 	getAllBeboer() {
 		return this.db
-			.query<User, []>("SELECT * FROM beboere")
+			.prepare<[], User>("SELECT * FROM beboere")
 			.all()
 			.sort((a, b) =>
 				DateTime.fromISO(a.birthday)
@@ -52,7 +51,7 @@ export class DBClient {
 	getLastMumsdag() {
 		return (
 			this.db
-				.query<Mumsdag, []>(
+				.prepare<[], Mumsdag>(
 					"SELECT * FROM mumsdag WHERE archived = 0 ORDER BY date DESC LIMIT 1",
 				)
 				.get() ?? undefined
@@ -61,7 +60,7 @@ export class DBClient {
 
 	getAllMumsdag() {
 		return this.db
-			.query<Mumsdag, []>(
+			.prepare<[], Mumsdag>(
 				"SELECT * FROM mumsdag WHERE archived = 0 ORDER BY date ASC",
 			)
 			.all();
@@ -71,14 +70,14 @@ export class DBClient {
 		// Join with beboere table to get main chef and sous chef
 		// Set mainChef to be the main chef and sousChef to be the sous chef
 		return this.db
-			.query<
+			.prepare<
+				[],
 				Mumsdag & {
 					mainChefName: string;
 					sousChefName: string;
 					mainChefDiscordId: string;
 					sousChefDiscordId: string;
-				},
-				[]
+				}
 			>(
 				`
 			SELECT md.*, b.name as mainChefName, b2.name as sousChefName, b.discord_id as mainChefDiscordId, b2.discord_id as sousChefDiscordId
@@ -107,7 +106,7 @@ export class DBClient {
 		if (date) {
 			return (
 				this.db
-					.query<Mumsdag, string>("SELECT * FROM mumsdag WHERE date = ?")
+					.prepare<string, Mumsdag>("SELECT * FROM mumsdag WHERE date = ?")
 					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 					.get(date) as any
 			);
@@ -123,7 +122,7 @@ export class DBClient {
 		}
 
 		query += " ORDER BY date ASC LIMIT ?";
-		return this.db.query<Mumsdag, [string, string, number]>(query).all(
+		return this.db.prepare<[string, string, number], Mumsdag>(query).all(
 			...([after, before].filter(Boolean) as [string, string]),
 			limit,
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -199,8 +198,8 @@ export class DBClient {
 	}
 
 	clear(beboere = false) {
-		this.db.run("DELETE FROM mumsdag");
-		if (beboere) this.db.run("DELETE FROM beboere");
+		this.db.exec("DELETE FROM mumsdag");
+		if (beboere) this.db.exec("DELETE FROM beboere");
 	}
 
 	/** Create database tables */
@@ -209,13 +208,13 @@ export class DBClient {
 
 		try {
 			if (clear) {
-				this.db.run("DROP TABLE IF EXISTS mumsdag");
-				this.db.run("DROP TABLE IF EXISTS beboere");
+				this.db.exec("DROP TABLE IF EXISTS mumsdag");
+				this.db.exec("DROP TABLE IF EXISTS beboere");
 			}
 
 			// Beboer table
 			console.log("Creating beboere table...");
-			this.db.run(
+			this.db.exec(
 				`CREATE TABLE IF NOT EXISTS beboere (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				name TEXT NOT NULL UNIQUE,
@@ -235,7 +234,7 @@ export class DBClient {
 
 			// mumsdag table
 			console.log("Creating mumsdag table...");
-			this.db.run(
+			this.db.exec(
 				`CREATE TABLE IF NOT EXISTS mumsdag (
 				date TEXT PRIMARY KEY,
 				mainChefId INTEGER NOT NULL,

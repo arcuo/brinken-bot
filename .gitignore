@@ -1,3 +1,7 @@
+executables/server
+executables/server-arm64
+build
+
 # Logs
 logs
 *.log
