@@ -7,3 +7,5 @@ await sendMessageToChannel({
 	channelId: DISCORD_TEST_CHANNEL_ID,
 	content: "Running dinner cron",
 });
+
+process.exit(0);
