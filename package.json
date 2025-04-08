@@ -7,21 +7,21 @@
   "author": "Emil Goldsmith Olesen <emilgoldsmith94@gmail.com> & Benjamin Zachariae <benjamin.zachariae@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "better-sqlite3": "^11.9.1",
     "discord.js": "^14.16.3",
     "dotenv": "^16.4.7",
-    "luxon": "^3.4.4"
+    "luxon": "^3.4.4",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7"
   },
   "scripts": {
     "dev": "MODE=development bun run index.ts",
     "db:migrate": "bun libs/db.ts migrate",
-    "build": "bun build index.ts --target node --outdir build && cp ./node_modules/better-sqlite3/build/Release/better_sqlite3.node ./build",
+    "build": "bun build index.ts --target node --outdir build && cp ./node_modules/sqlite3/build/Release/node_sqlite3.node ./build",
     "build:server-arm64": "bun build --compile --minify --target=bun-linux-arm64 ./index.ts --outfile executables/server-arm64",
     "build:server": "bun build --compile --minify ./index.ts --outfile executables/server",
     "build:handleDay": "bun build --compile --minify ./scripts/handle_day.ts --outfile executables/handleDay"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
     "@types/bun": "^1.2.8",
     "@types/luxon": "^3.6.2"
   },

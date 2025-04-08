@@ -13,7 +13,7 @@ export const birthdayActionListeners: ActionListeners = [
 		id: "see-birthday-schedule",
 		action: async ({ interaction }) => {
 			if (!interaction.isRepliable()) return;
-			const { allBirthdays } = getBirthdayPeople("");
+			const { allBirthdays } = await getBirthdayPeople("");
 
 			const indexOfNextyear = allBirthdays.findIndex(m => m.formattedBirthday.localeCompare(DateTime.now().toFormat("MM-dd")) < 0);
 			const birthdaysThisYear = allBirthdays.splice(0, indexOfNextyear);

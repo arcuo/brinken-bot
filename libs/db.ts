@@ -1,6 +1,6 @@
 // Handling Database
-const Database = require("better-sqlite3");
-import type { Database as DBType } from "better-sqlite3";
+import { Database } from "sqlite3";
+import { type Database as DBType, open } from "sqlite";
 import { generateAllPairings, getLastWednesdayFromNow } from "./utils.js";
 import { DateTime } from "luxon";
 
@@ -20,74 +20,70 @@ export type Mumsdag = {
 export class DBClient {
 	db: DBType;
 
-	constructor(filename) {
-		this.db = new Database(filename);
+	async init(filename: string) {
+		this.db = await open({
+			filename,
+			driver: Database,
+		});
+
+		return this;
 	}
 	/**
 	 * Get beboere
 	 */
 	getBeboer(name: string) {
-		return this.db
-			.prepare<string, User>("SELECT * FROM beboere WHERE name = ?")
-			.get(name);
+		return this.db.get(
+			"SELECT * FROM beboere WHERE name = ?",
+			name,
+		) as Promise<User>;
 	}
 
 	/**
 	 * Get all beboere sorted by birthday
 	 */
-	getAllBeboer() {
-		return this.db
-			.prepare<[], User>("SELECT * FROM beboere")
-			.all()
-			.sort((a, b) =>
+	async getAllBeboer() {
+		return ((await this.db.all("SELECT * FROM beboere")) as User[]).sort(
+			(a, b) =>
 				DateTime.fromISO(a.birthday)
 					.toFormat("MM-dd")
 					.localeCompare(DateTime.fromISO(b.birthday).toFormat("MM-dd")),
-			);
+		);
 	}
 
 	/** Get last mumsdag
 	 */
 	getLastMumsdag() {
-		return (
-			this.db
-				.prepare<[], Mumsdag>(
-					"SELECT * FROM mumsdag WHERE archived = 0 ORDER BY date DESC LIMIT 1",
-				)
-				.get() ?? undefined
-		);
+		return this.db.get(
+			"SELECT * FROM mumsdag WHERE archived = 0 ORDER BY date DESC LIMIT 1",
+		) as Promise<Mumsdag | undefined>;
 	}
 
 	getAllMumsdag() {
-		return this.db
-			.prepare<[], Mumsdag>(
-				"SELECT * FROM mumsdag WHERE archived = 0 ORDER BY date ASC",
-			)
-			.all();
+		return this.db.all(
+			"SELECT * FROM mumsdag WHERE archived = 0 ORDER BY date ASC",
+		) as Promise<Mumsdag[]>;
 	}
 
 	getAllMumsdagWithChefs() {
 		// Join with beboere table to get main chef and sous chef
 		// Set mainChef to be the main chef and sousChef to be the sous chef
-		return this.db
-			.prepare<
-				[],
-				Mumsdag & {
-					mainChefName: string;
-					sousChefName: string;
-					mainChefDiscordId: string;
-					sousChefDiscordId: string;
-				}
-			>(
-				`
+		return this.db.all(
+			`
 			SELECT md.*, b.name as mainChefName, b2.name as sousChefName, b.discord_id as mainChefDiscordId, b2.discord_id as sousChefDiscordId
 			FROM mumsdag md
 			JOIN beboere b ON b.id = md.mainChefId
 			JOIN beboere b2 ON b2.id = md.sousChefId
 			WHERE md.archived = 0 ORDER BY date ASC
 			`,
-			)
-			.all();
+		) as Promise<
+			Mumsdag &
+				{
+					mainChefName: string;
+					sousChefName: string;
+					mainChefDiscordId: string;
+					sousChefDiscordId: string;
+				}[]
+		>;
 	}
 
 	getMumsdag<
@@ -101,15 +97,14 @@ export class DBClient {
 			| undefined,
 	>(
 		opts?: TOpts,
-	): TOpts extends { date: string } ? Mumsdag | undefined : Mumsdag[] {
+	): Promise<TOpts extends { date: string } ? Mumsdag | undefined : Mumsdag[]> {
 		const { date, after, before, limit = 10 } = opts ?? {};
 		if (date) {
-			return (
-				this.db
-					.prepare<string, Mumsdag>("SELECT * FROM mumsdag WHERE date = ?")
-					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-					.get(date) as any
-			);
+			return this.db.get(
+				"SELECT * FROM mumsdag WHERE date = ?",
+				date,
+				// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			) as any;
 		}
 
 		let query = "SELECT * FROM mumsdag WHERE archived = 0";
@@ -122,7 +117,8 @@ export class DBClient {
 		}
 
 		query += " ORDER BY date ASC LIMIT ?";
-		return this.db.prepare<[string, string, number], Mumsdag>(query).all(
+		return this.db.all(
+			query,
 			...([after, before].filter(Boolean) as [string, string]),
 			limit,
 			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -132,9 +128,9 @@ export class DBClient {
 	/** Add new mumsdag pairings
 	 * returns the last date added
 	 */
-	addNewMumsdagPairings(fromDate?: string) {
+	async addNewMumsdagPairings(fromDate?: string) {
 		const pairings = generateAllPairings(10);
-		const lastMumsdag = this.getLastMumsdag();
+		const lastMumsdag = await this.getLastMumsdag();
 		let date = DateTime.fromISO(
 			fromDate ?? lastMumsdag?.date ?? getLastWednesdayFromNow().toISOString(),
 		);
@@ -158,14 +154,14 @@ export class DBClient {
 	 * Insert a mumsdag
 	 * @param {{date: string, mainChefId: number, sousChefId: number}[]} days
 	 */
-	insertMumsdag(
+	async insertMumsdag(
 		days: { date: string; mainChefId: number; sousChefId: number }[],
 	) {
-		const stmt = this.db.prepare(
+		const stmt = await this.db.prepare(
 			"INSERT INTO mumsdag (date, mainChefId, sousChefId) VALUES (?, ?, ?)",
 		);
 		for (const day of days) {
-			stmt.run(
+			await stmt.run(
 				new Date(day.date).toISOString(),
 				day.mainChefId,
 				day.sousChefId,
@@ -175,46 +171,49 @@ export class DBClient {
 
 	/** Archive mumsdag
 	 */
-	archiveMumsdag(date: string) {
-		return this.db
-			.prepare("UPDATE mumsdag SET archived = 1 WHERE date = ?")
-			.run(new Date(date).toISOString());
+	async archiveMumsdag(date: string) {
+		await this.db.run(
+			"UPDATE mumsdag SET archived = 1 WHERE date = ?",
+			new Date(date).toISOString(),
+		);
 	}
 
 	/**
 	 * Delete mumsdag or all earlier mumsdag from now
 	 */
-	deleteMumsdag(date?: string) {
+	async deleteMumsdag(date?: string) {
 		if (date) {
-			return this.db
-				.prepare("DELETE FROM mumsdag WHERE date = ?")
-				.run(new Date(date).toISOString());
+			return await this.db.run(
+				"DELETE FROM mumsdag WHERE date = ?",
+				new Date(date).toISOString(),
+			);
 		}
 
 		// Delete earlier mumsdags from now
-		return this.db
-			.prepare("DELETE FROM mumsdag WHERE date < ?")
-			.run(new Date().toISOString());
+		return await this.db.run(
+			"DELETE FROM mumsdag WHERE date < ?",
+			new Date().toISOString(),
+		);
 	}
 
-	clear(beboere = false) {
-		this.db.exec("DELETE FROM mumsdag");
-		if (beboere) this.db.exec("DELETE FROM beboere");
+	async clear(beboere = false) {
+		await this.db.exec("DELETE FROM mumsdag");
+		if (beboere) await this.db.exec("DELETE FROM beboere");
 	}
 
 	/** Create database tables */
-	migrate(clear = false) {
+	async migrate(clear = false) {
 		console.log("Migrating database...");
 
 		try {
 			if (clear) {
-				this.db.exec("DROP TABLE IF EXISTS mumsdag");
-				this.db.exec("DROP TABLE IF EXISTS beboere");
+				await this.db.exec("DROP TABLE IF EXISTS mumsdag");
+				await this.db.exec("DROP TABLE IF EXISTS beboere");
 			}
 
 			// Beboer table
 			console.log("Creating beboere table...");
-			this.db.exec(
+			await this.db.exec(
 				`CREATE TABLE IF NOT EXISTS beboere (
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				name TEXT NOT NULL UNIQUE,
@@ -224,17 +223,17 @@ export class DBClient {
 			);
 
 			console.log("Inserting users...");
-			const stmt = this.db.prepare(
+			const stmt = await this.db.prepare(
 				"INSERT OR IGNORE INTO beboere (name, birthday, discord_id) VALUES (?, ?, ?)",
 			);
 
 			for (const b of beboere) {
-				stmt.run(b.name, b.birthday, b.discordId);
+				await stmt.run(b.name, b.birthday, b.discordId);
 			}
 
 			// mumsdag table
 			console.log("Creating mumsdag table...");
-			this.db.exec(
+			await this.db.exec(
 				`CREATE TABLE IF NOT EXISTS mumsdag (
 				date TEXT PRIMARY KEY,
 				mainChefId INTEGER NOT NULL,
@@ -246,7 +245,7 @@ export class DBClient {
 			);
 
 			console.log("Inserting mumsdage...");
-			this.addNewMumsdagPairings();
+			await this.addNewMumsdagPairings();
 		} catch (err) {
 			console.error(err);
 			process.exit(1);
@@ -256,7 +255,7 @@ export class DBClient {
 	}
 }
 
-export const dbclient = await new DBClient("./brinkenbot.db");
+export const dbclient = await new DBClient().init("./brinkenbot.db");
 
 const beboere = [
 	{ name: "Emil", birthday: "1994-05-26", discordId: "1344338879490293835" },

@@ -5,8 +5,8 @@ import {
 } from "../globals.js";
 import { dbclient, type User } from "../db.js";
 
-export function getBirthdayPeople(targetBirthdayMMDD: string) {
-	const allBirthdays = dbclient.getAllBeboer().map((m) => {
+export async function getBirthdayPeople(targetBirthdayMMDD: string) {
+	const allBirthdays = (await dbclient.getAllBeboer()).map((m) => {
 		const birthdayDate = DateTime.fromISO(m.birthday);
 
 		// Check year
