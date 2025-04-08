@@ -20,3 +20,5 @@ export async function handleDay() {
 	console.log(today);
 	await dinnerCRON.handleDayOfDinner(today);
 }
+
+process.exit(0);

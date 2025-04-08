@@ -1,0 +1,13 @@
+name: Handle day Action
+on: 
+  workflow_dispatch:
+  schedule:
+    - cron: '0 8 * * *' # Runs day at 8am
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps: # Run ./test script
+      - uses: actions/checkout@v3
+      - run: ./handleDay
+        env: 
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
