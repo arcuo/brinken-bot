@@ -4,9 +4,9 @@ on:
   schedule:
     - cron: '0 8 * * *' # Runs day at 8am
 jobs:
-  test:
+  handle-day:
     runs-on: ubuntu-latest
-    steps: # Run ./test script
+    steps:
       - uses: actions/checkout@v3
       - run: ./executables/handleDay
         env: 
