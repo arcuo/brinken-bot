@@ -1,5 +1,5 @@
 // Handling Database
-import { Database } from "sqlite3";
+import sqlite3 from "sqlite3";
 import { type Database as DBType, open } from "sqlite";
 import { generateAllPairings, getLastWednesdayFromNow } from "./utils.js";
 import { DateTime } from "luxon";
@@ -23,7 +23,7 @@ export class DBClient {
 	async init(filename: string) {
 		this.db = await open({
 			filename,
-			driver: Database,
+			driver: sqlite3.Database,
 		});
 
 		return this;
