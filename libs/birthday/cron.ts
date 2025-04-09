@@ -8,7 +8,7 @@ export async function handleWeekBeforeBirthday(
 	channelNameSuffix = "",
 ) {
 	const { birthdayPeople, birthdayYear, birthdayResponsible } =
-		getBirthdayPeople(targetBirthdayMMDD);
+		await getBirthdayPeople(targetBirthdayMMDD);
 
 	const birthdayChannelName = buildBirthdayChannelName(
 		birthdayPeople,
@@ -29,7 +29,7 @@ export async function handleWeekBeforeBirthday(
 			permissionOverwrites: [
 				...birthdayPeople.map((x) => ({
 					type: OverwriteType.Member,
-					id: x["discord-id"],
+					id: x.discordId,
 					allow: [PermissionsBitField.Flags.ViewChannel],
 				})),
 				{
@@ -57,7 +57,7 @@ ${birthdayPeople
 	.map(
 		(x) =>
 			`- ${
-				x["discord-id"] ? `<@${x["discord-id"]}>` : `**${x.name}**`
+				x.discordId ? `<@${x.discordId}>` : `**${x.name}**`
 			} der bliver ${x.nextAge} år gammel`,
 	)
 	.join("\n")}\n\nDe har fødselsdag om en uge ${DateTime.fromFormat(
@@ -67,7 +67,7 @@ ${birthdayPeople
 			.setLocale("da-DK")
 			.toFormat(
 				"EEEE 'd.' dd. MMMM",
-			)}, og den hovedansvarlige for fødselsdag morgenmad er: - ${birthdayResponsible["discord-id"] ? `<@${birthdayResponsible["discord-id"]}>` : `**${birthdayResponsible.name}**`}`,
+			)}, og den hovedansvarlige for fødselsdag morgenmad er: - ${birthdayResponsible.discordId ? `<@${birthdayResponsible.discordId}>` : `**${birthdayResponsible.name}**`}`,
 	});
 }
 
@@ -80,7 +80,7 @@ export async function handleDayBeforeBirthday(
 		birthdayChannelName = channelNameOverride;
 	} else {
 		const { birthdayPeople, birthdayYear } =
-			getBirthdayPeople(targetBirthdayMMDD);
+			await getBirthdayPeople(targetBirthdayMMDD);
 		if (birthdayPeople.length <= 0) return;
 
 		birthdayChannelName = buildBirthdayChannelName(

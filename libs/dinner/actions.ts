@@ -6,7 +6,12 @@ import {
 	type ActionListeners,
 } from "../globals.js";
 import { DateTime, Interval } from "luxon";
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import {
+	ActionRowBuilder,
+	ButtonBuilder,
+	type ButtonInteraction,
+	ButtonStyle,
+} from "discord.js";
 import { dbclient } from "../db.js";
 
 /**
@@ -23,6 +28,9 @@ export const dinnerActionListeners: ActionListeners = [
 	{
 		id: "see-dinner-schedule",
 		action: async ({ interaction }) => {
+			if (!interaction.isButton()) {
+				return;
+			}
 			await handlerDinnerScheduleActionResponse({
 				interaction,
 				startDate: DateTime.now(),
@@ -34,6 +42,9 @@ export const dinnerActionListeners: ActionListeners = [
 	{
 		id: "show-more-dinner-schedule",
 		action: async ({ interaction, actionValue }) => {
+			if (!interaction.isButton()) {
+				return;
+			}
 			const [endDateISO, isContinuedMessageString, startDateISO] =
 				actionValue.split("#");
 			let startDate = DateTime.fromISO(startDateISO);
@@ -64,7 +75,7 @@ export const dinnerActionListeners: ActionListeners = [
 					updateOriginal: true,
 					isContinuedMessage: isContinuedMessageString === "true",
 					disableShowMore: true,
-					replyAlreadyAckhnowledged: true,
+					replyAlreadyAcknowledged: true,
 				});
 			}
 		},
@@ -92,16 +103,6 @@ export const dinnerActionListeners: ActionListeners = [
 	// 	],
 ];
 
-/**
- * @param {object} obj
- * @param {import("discord.js").Interaction} obj.interaction
- * @param {DateTime} obj.startDate
- * @param {DateTime} obj.endDate
- * @param {boolean} obj.updateOriginal
- * @param {boolean} [obj.isContinuedMessage=false]
- * @param {boolean} [obj.disableShowMore=false]
- * @param {boolean} [obj.replyAlreadyAckhnowledged=false]
- */
 async function handlerDinnerScheduleActionResponse({
 	interaction,
 	startDate,
@@ -109,7 +110,15 @@ async function handlerDinnerScheduleActionResponse({
 	updateOriginal,
 	isContinuedMessage = false,
 	disableShowMore = false,
-	replyAlreadyAckhnowledged = false,
+	replyAlreadyAcknowledged = false,
+}: {
+	interaction: ButtonInteraction;
+	startDate: DateTime;
+	endDate: DateTime;
+	updateOriginal: boolean;
+	isContinuedMessage?: boolean;
+	disableShowMore?: boolean;
+	replyAlreadyAcknowledged?: boolean;
 }) {
 	const allMumsdag = (await dbclient.getAllMumsdagWithChefs()).map((m) => {
 		return {
@@ -146,7 +155,7 @@ ${targetDbRows
 	)
 	.join("\n")}`;
 
-	const actionRow = new ActionRowBuilder();
+	const actionRow = new ActionRowBuilder<ButtonBuilder>();
 	actionRow.addComponents(
 		new ButtonBuilder()
 			.setCustomId(
@@ -167,8 +176,12 @@ ${targetDbRows
 	if (updateOriginal) {
 		const messageId = interaction.message.id;
 		const oldInteraction = getInteraction(messageId);
-		if (!isInteractionValid(messageId) || oldInteraction === undefined) {
-			if (replyAlreadyAckhnowledged) {
+		if (
+			!oldInteraction?.isButton() ||
+			!isInteractionValid(messageId) ||
+			oldInteraction === undefined
+		) {
+			if (replyAlreadyAcknowledged) {
 				return;
 			}
 			await interaction.reply({
@@ -188,7 +201,7 @@ ${targetDbRows
 			return;
 		}
 
-		if (!replyAlreadyAckhnowledged) {
+		if (!replyAlreadyAcknowledged) {
 			await interaction.deferUpdate();
 		}
 		await oldInteraction.editReply({

@@ -8,14 +8,13 @@ import {
 	discordClient,
 	DISCORD_GUILD_ID,
 } from "../globals.js";
-import { DateTime } from "luxon";
-import { Message, TextChannel } from "discord.js";
+import type { DateTime } from "luxon";
+import { TextChannel } from "discord.js";
 import { dbclient } from "../db.js";
 
-/**
- * @argument {DateTime} onsdagLuxonDateTime
- */
-export async function handleThreeDaysBeforeDinner(onsdagLuxonDateTime) {
+export async function handleThreeDaysBeforeDinner(
+	onsdagLuxonDateTime: DateTime,
+) {
 	// Check if wednesday
 	if (onsdagLuxonDateTime.weekday !== 3) {
 		return;
@@ -49,25 +48,25 @@ Der er nu madlavningsplan indtil ${curDate
 		// }
 	}
 
-	const dbRow = JSON.parse(
-		await dbclient.getMumsdag(onsdagLuxonDateTime.toFormat("yyyy-MM-dd")),
-	);
+	const dbRow = await dbclient.getMumsdag({
+		date: onsdagLuxonDateTime.toFormat("yyyy-MM-dd"),
+	});
 
-	const headChef = await dbclient.getBeboer(dbRow.mainChefId);
-	const assistent = await dbclient.getBeboer(dbRow.sousChefId);
+	if (!dbRow) return;
+
+	const headChef = await dbclient.getBeboerById(dbRow.mainChefId);
+	const assistent = await dbclient.getBeboerById(dbRow.sousChefId);
 
 	const msgLines = [
 		"# Mumsdag",
 		"",
 		"Så er der endnu engang tre dage til mumsdag! I denne uge har vi:",
 		`- :cook: **Head Chef:** ${
-			headChef["discord-id"]
-				? `<@${headChef["discord-id"]}>`
-				: `**${headChef.name}**`
+			headChef.discordId ? `<@${headChef.discordId}>` : `**${headChef.name}**`
 		}`,
 		`- :cook: **Souschef:** ${
-			assistent["discord-id"]
-				? `<@${assistent["discord-id"]}>`
+			assistent.discordId
+				? `<@${assistent.discordId}>`
 				: `**${assistent.name}**`
 		}`,
 		"## Svar Udbedes",
@@ -88,10 +87,7 @@ Der er nu madlavningsplan indtil ${curDate
 	}
 }
 
-/**
- * @argument thursdayLuxonDateTime {DateTime}
- */
-export async function handleDayOfDinner(thursdayLuxonDateTime) {
+export async function handleDayOfDinner(thursdayLuxonDateTime: DateTime) {
 	if (thursdayLuxonDateTime.weekday !== 3) {
 		return;
 	}
@@ -134,7 +130,7 @@ export async function handleDayOfDinner(thursdayLuxonDateTime) {
 
 	const guildUserMembers = [...(await guild.members.fetch()).values()]
 		.map((x) => x.user)
-		.filter((x) => members.find((y) => y["discord-id"] === x.id) !== undefined);
+		.filter((x) => members.find((y) => y.discordId === x.id) !== undefined);
 
 	const membersThatHaventReacted = guildUserMembers.filter(
 		(x) => !usersThatHaveReacted.map((y) => y.id).includes(x.id),
@@ -149,7 +145,7 @@ export async function handleDayOfDinner(thursdayLuxonDateTime) {
 
 	const membersWithMaybeReaction = [
 		...(await maybeReaction.users.fetch()).values(),
-	].filter((x) => members.find((y) => y["discord-id"] === x.id) !== undefined);
+	].filter((x) => members.find((y) => y.discordId === x.id) !== undefined);
 	await sendDinnerMessage(
 		`
 # Mumsdag i aften

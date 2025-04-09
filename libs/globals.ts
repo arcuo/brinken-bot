@@ -1,6 +1,7 @@
 import {
 	ActionRowBuilder,
 	ButtonBuilder,
+	type ButtonInteraction,
 	ButtonStyle,
 	type Interaction,
 } from "discord.js";
@@ -26,11 +27,18 @@ export const discordClient = new Client({
 	intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
 }) as Client;
 
-const commands = new Collection();
+// Add commands parameter to the discord Client type
+declare module "discord.js" {
+	interface Client {
+		commands: Collection<string, (typeof slashCommands)[0]>; // Replace 'any' with your command type
+	}
+}
+
+discordClient.commands = new Collection();
 
 // biome-ignore lint/complexity/noForEach: <explanation>
 slashCommands.forEach((command) => {
-	commands.set(command.data.name, command);
+	discordClient.commands.set(command.data.name, command);
 });
 
 discordClient.on(Events.InteractionCreate, async (interaction) => {
@@ -75,7 +83,7 @@ export async function sendMessageToChannel({
 	return channel.send(content);
 }
 
-async function handleButtonInteraction(interaction) {
+async function handleButtonInteraction(interaction: ButtonInteraction) {
 	const [actionId, actionValue] = interaction.customId.split("*");
 
 	const allListeners = globalActionListeners
@@ -144,7 +152,11 @@ export const globalActionListeners: ActionListeners = [
 			if (!interaction.isButton()) return;
 			if (interaction.message.interactionMetadata) {
 				const oldInteraction = getInteraction(interaction.message.id);
-				if (isInteractionValid(interaction.message.id) && oldInteraction) {
+				if (
+					oldInteraction?.isButton() &&
+					isInteractionValid(interaction.message.id) &&
+					oldInteraction
+				) {
 					await interaction.deferUpdate();
 					await oldInteraction.deleteReply();
 					return;
@@ -166,7 +178,7 @@ export const globalActionListeners: ActionListeners = [
 			await interaction.reply({
 				content: "Flere handlinger",
 				components: [
-					...getMoreButtons(actionValue),
+					...getMoreButtons(actionValue as "dinner" | "birthday"),
 					new ActionRowBuilder<ButtonBuilder>().addComponents(
 						new ButtonBuilder()
 							.setLabel("Skjul besked")
@@ -192,15 +204,11 @@ const dinnerButtons = [
 		.setLabel("Ret skema")
 		.setStyle(ButtonStyle.Primary),
 ];
-
-/**
- * @param {string} message
- */
-export function sendDinnerMessage(message) {
+export function sendDinnerMessage(message: string) {
 	return sendMessageToChannel({
 		channelId: MUMSDAG_CHANNEL_ID,
 		content: {
-			body: message,
+			content: message,
 			components: [
 				new ActionRowBuilder<ButtonBuilder>().addComponents(
 					...dinnerButtons,
@@ -218,16 +226,14 @@ const birthdayButtons = [
 		.setStyle(ButtonStyle.Primary),
 ];
 
-/**
- * @param {object} obj
- * @param {string} obj.message
- * @param {string} obj.channelId
- */
-export function sendBirthdayMessage({ message, channelId }) {
+export function sendBirthdayMessage({
+	message,
+	channelId,
+}: { message: string; channelId: string }) {
 	return sendMessageToChannel({
 		channelId,
 		content: {
-			body: message,
+			content: message,
 			components: [
 				new ActionRowBuilder<ButtonBuilder>().addComponents(
 					...birthdayButtons,
@@ -253,14 +259,11 @@ const generalButtons = [
 		),
 ];
 
-/**
- * @param {string} message
- */
-export function sendGeneralMessage(message) {
+export function sendGeneralMessage(message: string) {
 	return sendMessageToChannel({
 		channelId: GENERAL_CHANNEL_ID,
 		content: {
-			body: message,
+			content: message,
 			components: [
 				new ActionRowBuilder<ButtonBuilder>().addComponents(
 					...generalButtons,
@@ -271,21 +274,16 @@ export function sendGeneralMessage(message) {
 	});
 }
 
-/**
- * @param {'dinner' | 'birthday' | 'general'} type
- */
-function getSeeMoreActionsButton(type) {
+function getSeeMoreActionsButton(type: "dinner" | "birthday" | "general") {
 	return new ButtonBuilder()
 		.setCustomId(`see-more-actions*${type}`)
 		.setLabel("Se flere handlinger")
 		.setStyle(ButtonStyle.Secondary);
 }
 
-/**
- * @param {'dinner' | 'birthday' | 'general' | 'none'} exclude
- * @returns {ActionRowBuilder[]}
- */
-export function getMoreButtons(exclude) {
+export function getMoreButtons(
+	exclude: "dinner" | "birthday" | "general" | "none",
+) {
 	const ret: ActionRowBuilder<ButtonBuilder>[] = [];
 	if (exclude !== "general") {
 		ret.push(
@@ -336,9 +334,9 @@ export function getMoreButtons(exclude) {
 	return ret;
 }
 
-const interactionCache = new Map();
+const interactionCache = new Map<string, [number, Interaction]>();
 
-export function isInteractionValid(messageId) {
+export function isInteractionValid(messageId: string) {
 	const timestamp = interactionCache.get(messageId)?.[0];
 	if (!timestamp) {
 		return false;
@@ -346,11 +344,15 @@ export function isInteractionValid(messageId) {
 	return Date.now() - timestamp < 15 * 60 * 1000 - 1000;
 }
 
-export function getInteraction(messageId) {
+export function getInteraction(messageId: string) {
 	return interactionCache.get(messageId)?.[1];
 }
 
-export function cacheInteraction({ timestamp, interaction, messageId }) {
+export function cacheInteraction({
+	timestamp,
+	interaction,
+	messageId,
+}: { timestamp: number; interaction: Interaction; messageId: string }) {
 	interactionCache.set(messageId, [timestamp, interaction]);
 }
 

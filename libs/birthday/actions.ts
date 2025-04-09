@@ -33,7 +33,7 @@ ${NextBirthdays
 - :flag_dk: d. **${DateTime.fromISO(x.birthday)
 			.setLocale("da-DK")
 			.toFormat("dd. MMMM")}** bliver ${
-			x["discord-id"] ? `<@${x["discord-id"]}>` : `**${x.name}**`
+			x["discordId"] ? `<@${x["discordId"]}>` : `**${x.name}**`
 		} ${x.nextAge} år :flag_dk:`,
 	)
 	.join("\n")}`,

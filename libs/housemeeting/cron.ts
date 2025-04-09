@@ -1,10 +1,7 @@
-import { DateTime } from "luxon";
+import type { DateTime } from "luxon";
 import { sendGeneralMessage } from "../globals.js";
 
-/**
- * @argument {DateTime} targetLuxonDateTime
- */
-export function handleTwoDaysBeforeHouseMeeting(targetLuxonDateTime) {
+export function handleTwoDaysBeforeHouseMeeting(targetLuxonDateTime: DateTime) {
 	const firstWednesdayOfTheMonth =
 		targetLuxonDateTime.day <= 7 && targetLuxonDateTime.weekday === 3;
 	if (firstWednesdayOfTheMonth) {

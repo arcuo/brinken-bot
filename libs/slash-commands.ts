@@ -1,4 +1,7 @@
-import { SlashCommandBuilder } from "discord.js";
+import {
+	type ChatInputCommandInteraction,
+	SlashCommandBuilder,
+} from "discord.js";
 import {
 	cacheInteraction,
 	DISCORD_TEST_CHANNEL_ID,
@@ -13,7 +16,7 @@ export const slashCommands = [
 			.setDescription(
 				"Se alle mulige handlinger og informationer Brinken Botten tilbyder dig",
 			),
-		async execute(interaction) {
+		async execute(interaction: ChatInputCommandInteraction) {
 			await interaction.reply({
 				content:
 					"Hej! Her er alle de handlinger og informationer jeg kan tilbyde dig!",
@@ -31,7 +34,9 @@ export const slashCommands = [
 	},
 ];
 
-export async function handleSlashCommand(interaction) {
+export async function handleSlashCommand(
+	interaction: ChatInputCommandInteraction,
+) {
 	const command = interaction.client.commands.get(interaction.commandName);
 
 	if (!command) {

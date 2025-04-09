@@ -18,7 +18,7 @@ export type Mumsdag = {
 };
 
 export class DBClient {
-	db: DBType;
+	db!: DBType;
 
 	async init(filename: string) {
 		this.db = await open({
@@ -35,6 +35,13 @@ export class DBClient {
 		return this.db.get(
 			"SELECT * FROM beboere WHERE name = ?",
 			name,
+		) as Promise<User>;
+	}
+
+	getBeboerById(id: number) {
+		return this.db.get(
+			"SELECT * FROM beboere where id = ?",
+			id,
 		) as Promise<User>;
 	}
 
@@ -217,7 +224,7 @@ export class DBClient {
 				id INTEGER PRIMARY KEY AUTOINCREMENT,
 				name TEXT NOT NULL UNIQUE,
 				birthday TEXT NOT NULL,
-				discord_id TEXT NOT NULL
+				discordId TEXT NOT NULL
 				)`,
 			);
 

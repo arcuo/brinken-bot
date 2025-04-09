@@ -1,4 +1,6 @@
-export function stringNaturalLanguageList(items) {
+import type { Interaction } from "discord.js";
+
+export function stringNaturalLanguageList(items: string[]) {
 	if (items.length <= 0) {
 		return "";
 	}
@@ -74,7 +76,7 @@ export function generateAllPairings(n: number) {
 		// This should result in a cycle of everyone but the top right person of one step in a clockwise direction
 	}
 
-	let numFirsts = {};
+	let numFirsts: Record<number, number> = {};
 	let iterations = 0;
 	let success = false;
 	while (!success) {
@@ -96,7 +98,7 @@ export function generateAllPairings(n: number) {
 	return matches.map((x) => x.map((y) => y + 1));
 }
 
-export function stringifyDiscordClass(discordClass) {
+export function stringifyDiscordClass(discordClass: Interaction) {
 	return JSON.stringify(
 		discordClass.toJSON(),
 		(_key, value) => (typeof value === "bigint" ? value.toString() : value), // return everything else unchanged
