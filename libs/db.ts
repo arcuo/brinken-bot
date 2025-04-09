@@ -76,13 +76,12 @@ export class DBClient {
 			WHERE md.archived = 0 ORDER BY date ASC
 			`,
 		) as Promise<
-			Mumsdag &
-				{
-					mainChefName: string;
-					sousChefName: string;
-					mainChefDiscordId: string;
-					sousChefDiscordId: string;
-				}[]
+			(Mumsdag & {
+				mainChefName: string;
+				sousChefName: string;
+				mainChefDiscordId: string;
+				sousChefDiscordId: string;
+			})[]
 		>;
 	}
 
